@@ -62,11 +62,13 @@ This is the main driver that does all of the calculations. One can use the **df.
         def add(row):
             return pd.Series([np.array(row['x']) + np.array(row['y'])], index = ['z'])
 
+This code simply adds the values in the x and y columns. It returns them as a pandas series (similar to a 1D dataframe) as a column named 'z'.
+
 This could be appended to the existing dataframe via:
 
         df = df.join(df.apply(add, axis = 1))
 
-All of the code works off of the principle, but with more complicated functions.
+This results in a dataframe with 3 columns, x, y, and z. All of the code works off of the principle, but with more complicated functions.
 
 The first thing done inside of df = cluster(df) is to get the UV channels. All data from here on out is correlated to either a "u" strip or a "v" strip. The code that works here is:
 
@@ -108,3 +110,11 @@ I will go through each row and explain, remember that I already split by U, V ch
 v_chan_num contains the 'v' channel numbers, e.g. all channels with signal above threshold where we counted a strip fiting. ADC and pulse time is the same, just the ADC and pulse time for the given hit.
 
 v_chan_num_split is after the 1D clustering. In this example, the code found 2 clusters, so they are split twofold. The same is done for the adc and pulse_time. Finally, the weighted channel numbers are made. This is the weighted average within a cluster, where the weight factor is the ADC.
+
+## Plotting
+
+Finally, one can see an example of how to use the data in the plot(df) function found in cluster.py. One can get the column of a data frame as an array by doing:
+
+        df['name'].to_numpy()
+
+Then all hits are correlated with one another and plotted. I'm still using ROOT to plot, remember you don't need to declare types in python.
