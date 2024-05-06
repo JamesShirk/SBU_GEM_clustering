@@ -6,3 +6,4 @@ __pycache__/
 *.tar
 *.root
 *.png
+*.DS_Store
