@@ -1,0 +1,8 @@
+plots/
+non_vectorized/
+backup/
+*.pdf
+__pycache__/
+*.tar
+*.root
+*.png
