@@ -4,9 +4,11 @@ from timeit import default_timer as timer
 import pandas as pd
 import sys
 import itertools
+import os
 
 import cluster1D as cl
 import transform as tr
+import make_tree as tree
 
 '''
 INPUT
@@ -111,13 +113,21 @@ def plot(df):
         pairs[i] = tr.transform(pairs[i], 0.82, np.radians(26.5))
     cartesian_coords = tr.affine_translation(pairs)
 
+    cartesian_coords_cut = []
+    for i in cartesian_coords:
+        if i[0] < -120 or i[0] > 120:
+            continue
+        if i[1] > 0 or i[1] < -400:
+            continue
+        cartesian_coords_cut.append(i)
+
     for i in range(len(pairs_2)):
         pairs_2[i] = tr.transform(pairs_2[i], 0.82, np.radians(26.5))
     cartesian_coords2 = tr.affine_translation(pairs_2)
 
     c = ROOT.TCanvas()
-    hits = ROOT.TH2D("hits", "Hits", 100, -300, 300, 100, -500, 100)
-    for i in cartesian_coords2:
+    hits = ROOT.TH2D("hits", "Hits", 1000, -300, 300, 1000, -500, 100)
+    for i in cartesian_coords:
         hits.Fill(i[0], i[1])
     c.Draw()
     hits.GetXaxis().SetTitle("x (mm)")
@@ -126,12 +136,51 @@ def plot(df):
     c.SaveAs("plots/hits.pdf")
 
 
+    c2 = ROOT.TCanvas()
+    #hits_cut = ROOT.TH2D("hits_cut", "Hits_cut", 100, -150, 150, 100, -430, 30)
+    hits_cut = ROOT.TH2D("hits_cut", "Hits_cut", 1000, -300, 300, 1000, -500, 100)
+    for i in cartesian_coords_cut:
+        hits_cut.Fill(i[0], i[1])
+    c2.Draw()
+    hits_cut.GetXaxis().SetTitle("x (mm)")
+    hits_cut.GetYaxis().SetTitle("y (mm)")
+    hits_cut.Draw("colz")
+    c2.SaveAs("plots/hits_cut.pdf")
+
+    c3 = ROOT.TCanvas()
+    hits_2 = ROOT.TH2D("hits_cut", "Hits_cut", 1000, -300, 300, 1000, -500, 100)
+    for i in cartesian_coords2:
+        hits_2.Fill(i[0], i[1])
+    c3.Draw()
+    hits_2.GetXaxis().SetTitle("x (mm)")
+    hits_2.GetYaxis().SetTitle("y (mm)")
+    hits_2.Draw("colz")
+    c3.SaveAs("plots/hits_2.pdf")
+
+    cluster_size = ROOT.TH1D("clusters", "clusters", 9, 1, 10)
+
+    c1 = ROOT.TCanvas()
+    for i in u_hits:
+        cluster_size.Fill(len(i))
+    for i in v_hits:
+        cluster_size.Fill(len(i))
+    c1.Draw()
+    cluster_size.GetXaxis().SetTitle("N clusters")
+    cluster_size.GetYaxis().SetTitle("#")
+    cluster_size.Draw("colz")
+    c1.SaveAs("plots/cluster_size.pdf")
+
+
 
 if __name__ == "__main__":
-    df1 = readFile_pd(sys.argv[1])
-    df2 = readFile_pd(sys.argv[2])
-    df = pd.concat([df1, df2], ignore_index=True, sort=False)
-    #df = df1.append(df2)
+
+    files = os.listdir(sys.argv[1])
+    dfs = []
+    for file in files:
+        dfs.append(readFile_pd("{}{}".format(sys.argv[1], file)))
+    df = pd.concat(dfs, ignore_index = True, sort = False)
+    #df = readFile_pd(sys.argv[1])
     df = cluster(df)
-    print(df.iloc[1])
+    #tree.make_tree(df, "cluster_193.root")
+    #print(df.iloc[1])
     plot(df)

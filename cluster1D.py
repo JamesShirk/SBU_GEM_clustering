@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.stats import gaussian_kde, iqr
 from scipy.signal import argrelextrema, find_peaks
-from KDEpy import FFTKDE
+#from KDEpy import FFTKDE
 import pandas as pd
 
 # floating channels are indexed as 
@@ -67,11 +67,13 @@ def get_UV(row):
 
 # Wrapper function for cluster1D. For now just checks to make sure there is more than one element 
 def cluster1D(row, bw = 0.05, dir = 'u'):
-    index = [dir+'_chan_num_split', dir+'_chan_adc_split', dir+'_pulse_time_split', dir+'_weighted_chan_num']
+    index = [dir+'_chan_num_split', dir+'_chan_adc_split', dir+'_pulse_time_split', 
+             dir+'_weighted_chan_num', dir+'_weighted_chan_adc', dir+'_weighted_chan_tme']
     
     # just go ahead and return everything if it only has one element
     if len(row[dir+'_chan_num']) == 1:
-        return pd.Series([[row[dir+'_chan_num']], row[dir+'_chan_adc'], row[dir+'_pulse_time'], row[dir+'_chan_num']], 
+        return pd.Series([[row[dir+'_chan_num']], row[dir+'_chan_adc'], row[dir+'_pulse_time'], 
+                          row[dir+'_chan_num'], row[dir+'_chan_adc'], row[dir+'_pulse_time']], 
             index = index)
     else:
         # if more than 1 element, continue with main driver
@@ -89,7 +91,8 @@ def __cluster1D(row, index, bw = 0.05, dir = 'u'):
     # if there are no minima e.g, u channels look like: [313, 314]
     # go ahead and return it
     if len(mi) == 0:
-        return pd.Series([[chan_num], [chan_adc], [pulse_time], [np.average(chan_num, weights = chan_adc)]], 
+        return pd.Series([[chan_num], [chan_adc], [pulse_time], 
+                          [np.average(chan_num, weights = chan_adc)], [np.average(chan_adc)], [np.average(pulse_time, weights = chan_adc)]], 
                           index = index)
 
     # split arrays about minima
@@ -98,9 +101,12 @@ def __cluster1D(row, index, bw = 0.05, dir = 'u'):
     pulse_time_out = split(pulse_time, mi, chan_num)
     # take weighted average of each cluster
     weighted_chan_num = weighted_average(chan_num_out, chan_adc_out)
+    weighted_chan_adc = weighted_average(chan_adc_out, chan_adc_out)
+    weighted_chan_tme = weighted_average(pulse_time_out, chan_adc_out)
+
     #return
-    return pd.Series([chan_num_out, chan_adc_out, pulse_time_out, weighted_chan_num], 
-                     index = [dir+'_chan_num_split', dir+'_chan_adc_split', dir+'_pulse_time_split', dir+'_weighted_chan_num'])
+    return pd.Series([chan_num_out, chan_adc_out, pulse_time_out, weighted_chan_num, weighted_chan_adc, weighted_chan_tme], 
+                     index = index)
 
 '''
 INPUT
@@ -160,12 +166,12 @@ mi = Mx1 array of minima points in chan_num
 '''
 
 def generate_minima(chan_num, bw):
-    if len(chan_num) > 13:
-        kernelx, kernely = FFTKDE(kernel = 'gaussian', bw = 'ISJ').fit(chan_num).evaluate()
-        mi = find_peaks(-1*kernely)[0]
-        mi = kernelx[mi]
-    else:
-        kernely = gaussian_kde(chan_num ,bw_method=bw)
-        kernelx = np.linspace(0, 639, 640)
-        mi = find_peaks(-1*kernely(kernelx))[0]
+    #if len(chan_num) > 13:
+    #    kernelx, kernely = FFTKDE(kernel = 'gaussian', bw = 'ISJ').fit(chan_num).evaluate()
+    #    mi = find_peaks(-1*kernely)[0]
+    #    mi = kernelx[mi]
+    #else:
+    kernely = gaussian_kde(chan_num ,bw_method=bw)
+    kernelx = np.linspace(0, 639, 640)
+    mi = find_peaks(-1*kernely(kernelx))[0]
     return mi
